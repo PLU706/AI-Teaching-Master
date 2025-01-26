@@ -20,7 +20,7 @@ An interactive AI-powered educational platform that generates lessons, questions
 ### For Everyone Else:
 1. Clone the repository (Requires Git)
 ```
-git clone https://github.com/yourusername/ai-teaching-program.git
+git clone https://github.com/PLU706/ai-teaching-program.git
 cd ai-teaching-program
 ```
 
@@ -31,7 +31,7 @@ At first the web will say the website is unavaliable. Wait for a few moments and
 ### For Experts:
 1. Clone the repository (Requires Git)
 ```
-git clone https://github.com/yourusername/ai-teaching-program.git
+git clone https://github.com/PLU706/ai-teaching-program.git
 cd ai-teaching-program
 ```
 
