@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Teaching Master</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='ai.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .logout-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
+        #answerSection {
+            background-color: white;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .question-input-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #questionInput {
+            flex-grow: 1;
+            margin-right: 10px;
+            height: 40px;
+        }
+        #askButton {
+            width: 100px;
+            height: 40px;
+        }
+        .popup-content {
+            width: 80%;
+            max-width: 600px;
+        }
+        #guidanceText {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .guidance-button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .close-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            background-color: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    {% if session.logged_in %}
+    <div class="logout-container">
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    </div>
+    
+    <h1>AI Teaching Master</h1>
+    <div class="topic-input-container">
+        <input type="text" id="topicInput" placeholder="Enter a topic">
+        <button id="guidanceButton" onclick="toggleGuidancePopup()">📄</button>
+    </div>
+    <button id="generateLessonBtn" onclick="generateLesson()">Generate Lesson</button>
+    
+    <div id="lesson">
+        <div id="lessonLoader" class="loader" style="display:none;">
+            <div class="spinner"></div>
+            <p>Generating lesson...</p>
+        </div>
+        <div id="lessonContent"></div>
+    </div>
+    
+    <div id="answerSection" style="display:none;">
+        <div class="question-input-container">
+            <input type="text" id="questionInput" placeholder="Ask a question about the topic">
+            <button id="askButton" onclick="askQuestion()">Ask</button>
+        </div>
+        <div id="answerLoader" class="loader" style="display:none;">
+            <div class="spinner"></div>
+            <p>Generating answer...</p>
+        </div>
+        <div id="answer"></div>
+    </div>
+    
+    <div id="questions">
+        <div id="questionsLoader" class="loader" style="display:none;">
+            <div class="spinner"></div>
+            <p>Generating questions...</p>
+        </div>
+        <div id="questionsContent"></div>
+    </div>
+    
+    <div id="gradingResult" style="display:none;"></div>
+    
+    <div id="guidancePopup" class="popup" style="display:none;">
+        <div class="popup-content">
+            <h3>Paste Guidance Text</h3>
+            <textarea id="guidanceText" rows="10"></textarea>
+            <div class="guidance-button-container">
+                <button onclick="toggleGuidancePopup()" class="close-btn">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let questionsData = '';
+        let guidanceText = '';
+        
+        function toggleGuidancePopup() {
+            const popup = document.getElementById('guidancePopup');
+            popup.style.display = popup.style.display === 'none' ? 'flex' : 'none';
+        }
+        
+        function generateLesson() {
+            const topic = $('#topicInput').val();
+            guidanceText = $('#guidanceText').val();
+            $('#lessonLoader').show();
+            $('#questionsLoader').show();
+            $('#lessonContent').html('');
+            $('#questionsContent').html('');
+            $('#gradingResult').hide();
+            
+            const formData = new FormData();
+            formData.append('topic', topic);
+            formData.append('guidance_text', guidanceText);
+            
+            $.ajax({
+                url: '/generate_lesson',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    $('#lessonLoader').hide();
+                    $('#lessonContent').html(`<h2>Lesson: ${topic}</h2>${data.lesson}`);
+                    generateQuestions(topic);
+                }
+            });
+        }
+        
+        function generateQuestions(topic) {
+            const formData = new FormData();
+            formData.append('topic', topic);
+            formData.append('guidance_text', guidanceText);
+            
+            $.ajax({
+                url: '/generate_questions',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    $('#questionsLoader').hide();
+                    questionsData = data.questions;
+                    $('#questionsContent').html(`<h3>Questions:</h3>${formatQuestions(data.questions)}`);
+                    $('#answerSection').show();
+                }
+            });
+        }
+        
+        function askQuestion() {
+            const question = $('#questionInput').val();
+            const topic = $('#topicInput').val();
+            $('#answerLoader').show();
+            $('#answer').html('');
+            
+            const formData = new FormData();
+            formData.append('question', question);
+            formData.append('topic', topic);
+            formData.append('guidance_text', guidanceText);
+            
+            $.ajax({
+                url: '/answer_question',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    $('#answerLoader').hide();
+                    $('#answer').html(`<p><strong>Answer:</strong> ${data.answer}</p>`);
+                }
+            });
+        }
+        
+        function formatQuestions(questions) {
+            const questionRegex = /Q(\d+)\.\s([\s\S]*?)(?=Q\d+\.|$)/g;
+            const matches = [...questions.matchAll(questionRegex)];
+            let formattedQuestions = '';
+            
+            matches.forEach((match, index) => {
+                const questionNumber = match[1];
+                const questionText = match[2].trim();
+                
+                formattedQuestions += `<div class="question">
+                    <p><strong>Q${questionNumber}.</strong> ${questionText}</p>
+                    ${createTextArea(index)}
+                </div>`;
+            });
+            
+            return formattedQuestions + '<button onclick="submitAnswers()">Submit Answers</button>';
+        }
+        
+        function createTextArea(index) {
+            return `<div class="textarea-container"><textarea id="q${index}" rows="5"></textarea></div>`;
+        }
+        
+        function submitAnswers() {
+            const topic = $('#topicInput').val();
+            let userAnswers = '';
+            
+            $('.question').each((index, element) => {
+                const questionNumber = index + 1;
+                const textAnswer = $(element).find('textarea').val();
+                userAnswers += `Q${questionNumber}: ${textAnswer || 'Not answered'}\n\n`;
+            });
+            
+            $('#gradingResult').html('<div class="loader"><div class="spinner"></div><p>Grading answers...</p></div>').show();
+            
+            const formData = new FormData();
+            formData.append('topic', topic);
+            formData.append('answers', userAnswers);
+            formData.append('questions', questionsData);
+            formData.append('guidance_text', guidanceText);
+            
+            $.ajax({
+                url: '/grade_answers',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    $('#gradingResult').html(`<h3>Grading Result:</h3>${data.grading_result}`);
+                }
+            });
+        }
+    </script>
+    {% else %}
+    <script>
+        window.location.href = "{{ url_for('login') }}";
+    </script>
+    {% endif %}
+</body>
+</html>
