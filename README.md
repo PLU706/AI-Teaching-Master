@@ -28,6 +28,9 @@ cd ai-teaching-program
 Find the shortcut named `AI Teaching Master` and open it.
 At first the web will say the website is unavaliable. Wait for a few moments and it will open.
 
+3. Using the app
+Upon opening the app, you will be met with a login page. The password is `study123!`.
+
 ### For Experts:
 1. Clone the repository (Requires Git)
 ```
@@ -55,6 +58,9 @@ pip install -r requirements.txt
 python app.py
 ```
 Navigate to `http://localhost:5000/login`
+
+6. Using the app
+Upon opening the app, you will be met with a login page. The password is `study123!`.
 
 ## Technologies Used
 - Python
